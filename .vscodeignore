@@ -1,0 +1,12 @@
+.github/**
+.vscode/**
+src/**
+webview/**
+.gitignore
+tsconfig.json
+eslint.config.js
+pnpm-lock.yaml
+pnpm-workspace.yaml
+types.ts
+*.map
+.eslintcache
