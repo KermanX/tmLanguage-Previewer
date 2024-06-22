@@ -1,8 +1,10 @@
+import { Buffer } from 'node:buffer'
 import { effectScope, extensionContext, ref, shallowRef, useDisposable, useDocumentText, useIsDarkTheme, watchEffect } from 'reactive-vscode'
 import type { TextEditor, WebviewPanel } from 'vscode'
-import { Uri, ViewColumn, window } from 'vscode'
+import { Uri, ViewColumn, window, workspace } from 'vscode'
 import { loadIndexHtml, logger } from './utils'
 import { getTokenizer } from './getTokenizer'
+import { getExampleFile } from './getExampleFile'
 
 const editorToPanel = new WeakMap<TextEditor, WebviewPanel>()
 
@@ -15,7 +17,10 @@ export function usePreviewer(editor: TextEditor) {
   const panel = useDisposable(window.createWebviewPanel(
     'tmlanguage-previewer',
     'TmLanguage Previewer',
-    ViewColumn.Beside,
+    {
+      viewColumn: ViewColumn.Beside,
+      preserveFocus: true,
+    },
     {
       enableScripts: true,
       localResourceRoots: [Uri.joinPath(extensionContext.value!.extensionUri, 'dist/webview')],
@@ -30,10 +35,20 @@ export function usePreviewer(editor: TextEditor) {
 
   const scope = effectScope()
 
-  function onReady() {
+  async function onReady() {
     logger.info('Webview ready')
 
-    const exampleCode = ref(`import {a as b} from 'c'`)
+    const exampleUri = await getExampleFile(editor.document.uri)
+    const exampleDoc = exampleUri && await workspace.openTextDocument(exampleUri || editor.document.uri)
+    const exampleCode = exampleDoc
+      ? ref(exampleDoc.getText())
+      : ref('')
+    if (exampleDoc) {
+      useDisposable(workspace.onDidChangeTextDocument((e) => {
+        if (e.document === exampleDoc)
+          exampleCode.value = e.document.getText()
+      }))
+    }
 
     const isDark = useIsDarkTheme()
     watchEffect(() => {
@@ -76,8 +91,11 @@ export function usePreviewer(editor: TextEditor) {
     })
 
     panel.webview.onDidReceiveMessage((message) => {
-      if (message.type === 'ui-update-example')
+      if (message.type === 'ui-update-example') {
         exampleCode.value = message.code
+        if (exampleUri)
+          workspace.fs.writeFile(exampleUri, Buffer.from(message.code))
+      }
     })
   }
 
