@@ -10,6 +10,7 @@ const grammarPath = ref<string | null>(null)
 const examplePath = ref<string | null>(null)
 const editing = ref(false)
 const editingBuffer = ref('')
+const editingEl = ref<HTMLTextAreaElement | null>(null)
 
 declare const acquireVsCodeApi: () => any
 const vscode = acquireVsCodeApi()
@@ -18,6 +19,8 @@ vscode.postMessage({ type: 'ui-ready' })
 function startEdit() {
   editingBuffer.value = exampleCode.value
   editing.value = true
+  editingEl.value?.focus()
+  editingEl.value?.scrollTo(0, 0)
 }
 
 function finishEdit() {
@@ -49,45 +52,41 @@ window.addEventListener('message', (event) => {
   }
 })
 
-const vFocus = {
-  mounted(el: HTMLElement) {
-    if (editing.value)
-      el.focus()
-  },
-}
-
 watch(editing, hideAllPoppers)
 </script>
 
 <template>
-  <div fixed inset-0 border="~ base rounded" flex flex-col>
-    <div class="group" h-0 flex-grow relative font-mono @dblclick="startEdit">
-      <template v-if="Array.isArray(tokens)">
-        <!-- eslint-disable-next-line vue/require-component-is -->
-        <component is="pre" class="shiki absolute inset-0 px-4 py-2">
-          <template v-for="line, i in tokens" :key="i">
-            <br v-if="i !== 0">
-            <RenderToken v-for="token, j in line" :key="j" :token />
-          </template>
-        </component>
-        <textarea
-          v-if="editing" v-model="editingBuffer" v-focus
-          class="absolute inset-0 px-4 py-2 text-transparent bg-transparent caret-white !outline-2 outline-offset--2 !outline-gray rounded"
-          style="box-shadow: inset 0 0 4px #FFFFFFBB" @blur="finishEdit" @input="updateEdit" @keydown.enter.ctrl="finishEdit"
-        />
-      </template>
-      <div v-else-if="!tokens" class="p-4 text-center text-faded">
-        loading...
+  <div fixed inset-0 border="~ base rounded" flex flex-col @dblclick="startEdit">
+    <div h-0 flex-grow relative class="group">
+      <div absolute inset-0 overflow-auto font-mono>
+        <div v-if="Array.isArray(tokens)" relative min-w-max min-h-max>
+          <!-- eslint-disable-next-line vue/require-component-is -->
+          <component is="pre" class="shiki px-4 py-2">
+            <template v-for="line, i in tokens" :key="i">
+              <br v-if="i !== 0">
+              <RenderToken v-for="token, j in line" :key="j" :token />
+            </template>
+          </component>
+          <textarea
+            v-if="editing" ref="editingEl" v-model="editingBuffer"
+            class="absolute inset-0 pl-4 pt-2 text-transparent bg-transparent !outline-none caret-white overflow-y-hidden"
+            @blur="finishEdit" @input="updateEdit" @keydown.enter.ctrl="finishEdit"
+          />
+        </div>
+        <div v-else-if="!tokens" class="p-4 text-center text-faded">
+          loading...
+        </div>
+        <div v-else class="p-4 text-center text-red">
+          {{ tokens }}
+        </div>
       </div>
-      <div v-else class="p-4 text-center text-red">
-        {{ tokens }}
-      </div>
-      <button v-if="editing" absolute right-2 top-2 p-2 text-xl class="hover:bg-gray/15" rounded-lg @click="finishEdit">
+      <button v-if="editing" absolute right-4 top-2 p-2 text-xl class="hover:bg-gray/15" rounded-lg @click="finishEdit">
         <div text-transparent group-hover:text-white op80 i-carbon-checkmark />
       </button>
-      <button v-else absolute right-2 top-2 p-2 text-xl class="hover:bg-gray/15" rounded-lg @click="startEdit">
+      <button v-else absolute right-4 top-2 p-2 text-xl class="hover:bg-gray/15" rounded-lg @click="startEdit">
         <div text-transparent group-hover:text-white op80 i-carbon-edit />
       </button>
+      <div v-if="editing" absolute inset-0 pointer-events-none style="box-shadow: inset 0 0 4px #FFFFFFBB" />
     </div>
     <div px-3 py-1.5 b-t b-gray b-op-30 text-xs select-none flex items-center>
       <div v-if="grammarPath" pr-2>
