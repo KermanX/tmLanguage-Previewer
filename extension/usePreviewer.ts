@@ -87,6 +87,8 @@ export function usePreviewer(editor: TextEditor) {
         type: 'update-tokens',
         tokens: tokenizer.value(exampleCode.value),
         code: exampleCode.value,
+        grammarPath: workspace.asRelativePath(editor.document.uri),
+        examplePath: exampleUri ? workspace.asRelativePath(exampleUri) : null,
       })
     })
 
@@ -95,6 +97,12 @@ export function usePreviewer(editor: TextEditor) {
         exampleCode.value = message.code
         if (exampleUri)
           workspace.fs.writeFile(exampleUri, Buffer.from(message.code))
+      }
+      else if (message.type === 'ui-open-grammar-file') {
+        window.showTextDocument(editor.document)
+      }
+      else if (message.type === 'ui-open-example-file') {
+        window.showTextDocument(exampleDoc!)
       }
     })
   }
