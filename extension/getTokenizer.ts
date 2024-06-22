@@ -1,4 +1,4 @@
-import { createHighlighter } from 'shiki'
+import { bundledLanguages, createHighlighter } from 'shiki'
 
 export async function getTokenizer(code: string, dark: boolean) {
   try {
@@ -6,7 +6,7 @@ export async function getTokenizer(code: string, dark: boolean) {
     const parsed = JSON.parse(code)
     const highlighter = await createHighlighter({
       themes: [theme],
-      langs: [parsed],
+      langs: Object.keys(bundledLanguages).filter(n => n !== parsed.name).concat([parsed]),
     })
 
     return (code: string) => highlighter.codeToTokensBase(code, {
