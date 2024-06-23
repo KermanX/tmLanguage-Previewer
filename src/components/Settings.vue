@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { chooseExampleFile, examplePath, grammarFiles, vscode } from '../states'
+import { chooseExampleFile, examplePath, grammarFiles, openExampleFile, vscode } from '../states'
+import Button from './Button.vue'
 
 const shown = defineModel({ type: Boolean, required: true })
 
@@ -23,8 +24,11 @@ function toggleGrammar(uri: string, enabled: boolean) {
         Settings
       </h2>
       <div mb-2>
-        <h3 text-sm mb-2>
-          Grammar
+        <h3 text-sm mb-2 flex>
+          <span flex-grow>Grammar</span>
+          <Button mr-1 @click="addGrammarFile">
+            Add
+          </Button>
         </h3>
         <div grid items-center class="grid-cols-[min-content_1fr]" gap-x-2 px-1>
           <template v-for="file, uri, index in grammarFiles" :key="uri">
@@ -32,38 +36,34 @@ function toggleGrammar(uri: string, enabled: boolean) {
               <code>{{ file.scope }}</code>
             </span>
             <div color-white font-mono flex flex-row-reverse items-center gap-1 :class="file.enabled ? '' : 'op70'">
-              <button i-carbon-trash-can hover:color-white op70 hover:op90 hover:underline :class="index === 0 ? '!op10' : ''" @click="index !== 0 && removeGrammar(uri)" />
-              <button v-if="file.enabled" i-carbon-view hover:color-white op70 hover:op90 hover:underline @click="toggleGrammar(uri, false)" />
-              <button v-else i-carbon-view-off hover:color-white op70 hover:op90 hover:underline @click="toggleGrammar(uri, true)" />
+              <div i-carbon-trash-can hover:color-white op70 hover:op90 hover:underline :class="index === 0 ? '!op10' : ''" @click="index !== 0 && removeGrammar(uri)" />
+              <div v-if="file.enabled" i-carbon-view hover:color-white op70 hover:op90 hover:underline @click="toggleGrammar(uri, false)" />
+              <div v-else i-carbon-view-off hover:color-white op70 hover:op90 hover:underline @click="toggleGrammar(uri, true)" />
               <span>{{ file.path }}</span>
             </div>
           </template>
         </div>
-        <div text-right>
-          <button mr-1 mt-2 text-xs hover:color-white hover:bg-op10 hover:bg-gray px-1.5 py-.5 border="1 base rounded" @click="addGrammarFile">
-            Add
-          </button>
-        </div>
       </div>
-      <div>
-        <h3 text-sm>
-          Example
+      <div mt-2>
+        <h3 text-sm flex>
+          <span flex-grow>Example</span>
+          <Button mr-1 @click="chooseExampleFile">
+            Choose
+          </Button>
         </h3>
         <div flex gap-2 items-center px-1>
           <span flex-grow op70 color-white font-mono>
             {{ examplePath }}
           </span>
-          <button text-xs hover:color-white hover:bg-op10 hover:bg-gray px-1.5 py-.5 border="1 base rounded" @click="chooseExampleFile">
-            Choose
-          </button>
+          <div i-carbon-launch hover:color-white op70 hover:op90 hover:underline @click="openExampleFile" />
         </div>
       </div>
       <div flex-grow />
       <div text-right>
         <!-- <a i-carbon-logo-github text-lg op80 hover:op90 mr-1 hover:color-white href="https://github.com/KermanX/tmLanguage-Playground" target="_blank" /> -->
-        <button hover:color-white hover:bg-op10 hover:bg-gray px-1.5 py-.5 border="1 base rounded" @click="shown = false">
+        <Button @click="shown = false">
           Close
-        </button>
+        </Button>
       </div>
     </div>
   </div>
