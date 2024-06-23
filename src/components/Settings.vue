@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { chooseExampleFile, examplePath, grammarFiles, openGrammarFile } from '../states'
+import { chooseExampleFile, examplePath, grammarFiles } from '../states'
 
 const shown = defineModel({ type: Boolean, required: true })
 </script>
