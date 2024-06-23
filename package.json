@@ -37,7 +37,7 @@
         {
           "command": "tmlanguage-previewer.open",
           "group": "navigation",
-          "when": "editorLangId == json"
+          "when": "editorLangId == json && resourceFilename =~ /\\.tmLanguage\\.json$/i"
         }
       ]
     }

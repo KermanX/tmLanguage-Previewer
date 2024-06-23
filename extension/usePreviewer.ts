@@ -1,7 +1,9 @@
 import { Buffer } from 'node:buffer'
-import { effectScope, extensionContext, shallowRef, useDisposable, useDocumentText, useIsDarkTheme, watchEffect } from 'reactive-vscode'
+import type { EffectScope } from 'reactive-vscode'
+import { effectScope, extensionContext, reactive, ref, shallowReactive, shallowRef, useDisposable, useDocumentText, useIsDarkTheme, watchEffect } from 'reactive-vscode'
 import type { TextDocument, TextEditor, WebviewPanel } from 'vscode'
 import { Uri, ViewColumn, window, workspace } from 'vscode'
+import type { GrammarFile, TokensData } from '../types'
 import { loadIndexHtml, logger } from './utils'
 import { getTokenizer } from './getTokenizer'
 import { getExampleFile } from './getExampleFile'
@@ -33,7 +35,10 @@ export function usePreviewer(editor: TextEditor) {
 
   loadIndexHtml(panel.webview)
 
-  const scope = effectScope()
+  function postMessage(message: any) {
+    // console.log('ext:postMessage', message)
+    panel.webview.postMessage(message)
+  }
 
   async function onReady() {
     logger.info('Webview ready')
@@ -46,18 +51,33 @@ export function usePreviewer(editor: TextEditor) {
         workspace.openTextDocument(uri).then(d => exampleDoc.value = d)
     })
     const exampleCode = useDocumentText(exampleDoc)
+    const exampleLang = ref<string | null>(null)
     const isDark = useIsDarkTheme()
 
+    const grammarFiles: Record<string, GrammarFile> = reactive({
+      [editor.document.uri.toString()]: {
+        name: null,
+        scope: null,
+        path: workspace.asRelativePath(editor.document.uri),
+        enabled: true,
+      },
+    })
+    const grammarDocs: Record<string, TextDocument> = shallowReactive({
+      [editor.document.uri.toString()]: editor.document,
+    })
+    const forceUpdateGrammars = ref(0)
+
     watchEffect(() => {
-      panel.webview.postMessage({
+      postMessage({
         type: 'ext:update-theme',
         isDark: isDark.value,
       })
     })
 
-    const grammarText = useDocumentText(editor.document)
-    const tokenizer = shallowRef<Awaited<ReturnType<typeof getTokenizer>> | null>(null)
+    const tokenizer = shallowRef<((code: string, lang: string) => TokensData) | null>(null)
     watchEffect((onCleanup) => {
+      // eslint-disable-next-line no-unused-expressions
+      forceUpdateGrammars.value
       const timer = setTimeout(() => {
         tokenizer.value = null
       }, 1000)
@@ -66,23 +86,45 @@ export function usePreviewer(editor: TextEditor) {
         cancelled = true
         clearTimeout(timer)
       })
-      getTokenizer(grammarText.value!, isDark.value).then((t) => {
-        if (cancelled)
-          return
+      try {
+        const grammars: any[] = []
+        for (const uri in grammarFiles) {
+          const doc = grammarDocs[uri]
+          if (!doc)
+            continue
+          const g = JSON.parse(doc.getText())
+          if (g.name)
+            grammarFiles[uri].name = g.name
+          if (g.scopeName)
+            grammarFiles[uri].scope = g.scopeName
+          if (grammarFiles[uri].enabled)
+            grammars.push(g)
+        }
+        getTokenizer(grammars, isDark.value).then((t) => {
+          if (cancelled)
+            return
+          clearTimeout(timer)
+          tokenizer.value = t
+        })
+      }
+      catch (e) {
         clearTimeout(timer)
-        tokenizer.value = t
-      })
+        tokenizer.value = () => String(e)
+      }
     })
+
+    useDisposable(workspace.onDidOpenTextDocument((doc) => {
+      if (grammarFiles[doc.uri.toString()])
+        forceUpdateGrammars.value++
+    }))
 
     watchEffect(() => {
       if (tokenizer.value && exampleCode.value && exampleUri.value) {
-        panel.webview.postMessage({
+        postMessage({
           type: 'ext:update-tokens',
-          tokens: tokenizer.value[1](exampleCode.value),
+          tokens: tokenizer.value(exampleCode.value, exampleLang.value || grammarFiles[editor.document.uri.toString()].name || 'plaintext'),
           code: exampleCode.value,
-          grammarFiles: {
-            [tokenizer.value[0]]: workspace.asRelativePath(editor.document.uri),
-          },
+          grammarFiles: { ...grammarFiles },
           examplePath: workspace.asRelativePath(exampleUri.value),
         })
       }
@@ -121,16 +163,54 @@ export function usePreviewer(editor: TextEditor) {
           }
         })
       }
+      else if (message.type === 'ui:add-grammar') {
+        window.showOpenDialog({
+          canSelectFiles: true,
+          canSelectFolders: false,
+          canSelectMany: false,
+          defaultUri: exampleUri.value,
+          filters: {
+            'TmLanguage JSON': ['json'],
+          },
+        }).then(async (uris) => {
+          if (uris) {
+            for (const uri of uris) {
+              const doc = await workspace.openTextDocument(uri)
+              grammarFiles[uri.toString()] = {
+                name: null,
+                scope: null,
+                path: workspace.asRelativePath(uri),
+                enabled: true,
+              }
+              grammarDocs[uri.toString()] = doc
+            }
+          }
+        })
+      }
+      else if (message.type === 'ui:remove-grammar') {
+        const uri = message.uri
+        delete grammarFiles[uri]
+        delete grammarDocs[uri]
+      }
+      else if (message.type === 'ui:toggle-grammar') {
+        const uri = message.uri
+        if (grammarFiles[uri])
+          grammarFiles[uri].enabled = message.enabled
+      }
     })
   }
 
+  let scope: EffectScope | null = null
   panel.webview.onDidReceiveMessage((message) => {
-    if (message.type === 'ui:ready')
+    if (message.type === 'ui:ready') {
+      scope?.stop()
+      scope = effectScope()
       scope.run(onReady)
+    }
   })
 
   panel.onDidDispose(() => {
     editorToPanel.delete(editor)
-    scope.stop()
+    scope?.stop()
   })
 }

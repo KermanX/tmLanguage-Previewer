@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { hideAllPoppers } from 'floating-vue'
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import type { TokensData } from '../types'
 import RenderToken from './components/RenderToken.vue'
 import Settings from './components/Settings.vue'
@@ -11,7 +11,8 @@ const exampleCode = ref('import { a } from "A"')
 const editing = ref(false)
 const editingBuffer = ref('')
 const editingEl = ref<HTMLTextAreaElement | null>(null)
-const showSettings = ref(false)
+const settingsShown = ref(false)
+const enabledGrammars = computed(() => Object.entries(grammarFiles.value ?? {}).filter(([_, file]) => file.enabled))
 
 function startEdit() {
   editingBuffer.value = exampleCode.value
@@ -21,14 +22,21 @@ function startEdit() {
 }
 
 function finishEdit() {
-  editing.value = false
-  exampleCode.value = editingBuffer.value
-  vscode.postMessage({ type: 'ui:update-example', code: exampleCode.value })
+  if (editing.value) {
+    editing.value = false
+    exampleCode.value = editingBuffer.value
+    vscode.postMessage({ type: 'ui:update-example', code: exampleCode.value })
+  }
 }
 
 function updateEdit() {
   editingEl.value?.scrollTo(0, 0)
   vscode.postMessage({ type: 'ui:update-example', code: editingBuffer.value })
+}
+
+function openSettings() {
+  finishEdit()
+  settingsShown.value = true
 }
 
 window.addEventListener('message', (event) => {
@@ -47,7 +55,7 @@ watch(editing, hideAllPoppers)
 </script>
 
 <template>
-  <div fixed inset-0 border="~ base rounded" flex flex-col :class="showSettings ? 'filter-blur-5' : ''" @dblclick="startEdit">
+  <div fixed inset-0 flex flex-col :class="settingsShown ? 'filter-blur-5' : ''" @dblclick="startEdit">
     <div h-0 flex-grow relative class="group">
       <div absolute inset-0 overflow-auto font-mono>
         <div v-if="Array.isArray(tokens)" relative min-w-max min-h-max h-full>
@@ -73,7 +81,10 @@ watch(editing, hideAllPoppers)
         </div>
       </div>
       <template v-if="Array.isArray(tokens)">
-        <button v-if="editing" absolute right-4 top-2 p-2 text-xl class="hover:bg-gray/15" rounded-lg @click="finishEdit">
+        <button
+          v-if="editing" absolute right-4 top-2 p-2 text-xl class="hover:bg-gray/15" rounded-lg
+          @click="finishEdit"
+        >
           <div text-transparent group-hover:text-white op80 i-carbon-checkmark />
         </button>
         <button v-else absolute right-4 top-2 p-2 text-xl class="hover:bg-gray/15" rounded-lg @click="startEdit">
@@ -83,16 +94,21 @@ watch(editing, hideAllPoppers)
       </template>
     </div>
     <div px-3 py-1.5 b-t b-gray b-op-30 text-xs select-none flex items-center>
-      <div v-if="grammarFiles && Object.keys(grammarFiles)" pr-2>
+      <div pr-2>
         <span font-bold>
-          Grammar{{ Object.keys(grammarFiles).length > 1 ? 's' : '' }}:
+          Grammar{{ enabledGrammars.length > 1 ? 's' : '' }}:
         </span>
-        <button op70 color-white hover:color-white hover:op90 hover:underline @click="openGrammarFile">
-          {{ Object.entries(grammarFiles)[0][1] }}
-          <span v-if="Object.keys(grammarFiles).length > 1" op70>
-            +{{ Object.keys(grammarFiles).length - 1 }}
+        <template v-if="enabledGrammars.length">
+          <button op70 color-white hover:color-white hover:op90 hover:underline @click="openGrammarFile">
+            {{ enabledGrammars[0][1].path }}
+          </button>
+          <span v-if="enabledGrammars.length > 1" op50 color-white hover:color-white hover:op70 @click="openSettings">
+            +{{ enabledGrammars.length - 1 }}
           </span>
-        </button>
+        </template>
+        <span v-else op50>
+          No grammar enabled
+        </span>
       </div>
       <div v-if="examplePath">
         <span font-bold>
@@ -103,10 +119,8 @@ watch(editing, hideAllPoppers)
         </button>
       </div>
       <div flex-grow />
-      <button
-        i-carbon-settings text-lg op80 hover:op90 mr-1 hover:color-white @click="showSettings = true"
-      />
+      <button i-carbon-settings text-lg op80 hover:op90 mr-1 hover:color-white @click="openSettings" />
     </div>
   </div>
-  <Settings v-model="showSettings" />
+  <Settings v-model="settingsShown" />
 </template>

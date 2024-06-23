@@ -1,7 +1,19 @@
 <script setup lang="ts">
-import { chooseExampleFile, examplePath, grammarFiles } from '../states'
+import { chooseExampleFile, examplePath, grammarFiles, vscode } from '../states'
 
 const shown = defineModel({ type: Boolean, required: true })
+
+function addGrammarFile() {
+  vscode.postMessage({ type: 'ui:add-grammar' })
+}
+
+function removeGrammar(uri: string) {
+  vscode.postMessage({ type: 'ui:remove-grammar', uri })
+}
+
+function toggleGrammar(uri: string, enabled: boolean) {
+  vscode.postMessage({ type: 'ui:toggle-grammar', uri, enabled })
+}
 </script>
 
 <template>
@@ -15,15 +27,22 @@ const shown = defineModel({ type: Boolean, required: true })
           Grammar
         </h3>
         <div grid items-center class="grid-cols-[min-content_1fr]" gap-x-2 px-1>
-          <template v-for="path, scope in grammarFiles" :key="scope">
-            <span op70 color-white font-mono>
-              <code>{{ scope }}</code>
+          <template v-for="file, uri, index in grammarFiles" :key="uri">
+            <span color-white font-mono :class="file.enabled ? 'op90' : 'op60'">
+              <code>{{ file.scope }}</code>
             </span>
-            <div op70 color-white font-mono flex flex-row-reverse items-center gap-1>
-              <div i-carbon-edit hover:color-white hover:op90 hover:underline />
-              <span>{{ path }}</span>
+            <div color-white font-mono flex flex-row-reverse items-center gap-1 :class="file.enabled ? '' : 'op70'">
+              <button i-carbon-trash-can hover:color-white op70 hover:op90 hover:underline :class="index === 0 ? '!op10' : ''" @click="index !== 0 && removeGrammar(uri)" />
+              <button v-if="file.enabled" i-carbon-view hover:color-white op70 hover:op90 hover:underline @click="toggleGrammar(uri, false)" />
+              <button v-else i-carbon-view-off hover:color-white op70 hover:op90 hover:underline @click="toggleGrammar(uri, true)" />
+              <span>{{ file.path }}</span>
             </div>
           </template>
+        </div>
+        <div text-right>
+          <button mr-1 mt-2 text-xs hover:color-white hover:bg-op10 hover:bg-gray px-1.5 py-.5 border="1 base rounded" @click="addGrammarFile">
+            Add
+          </button>
         </div>
       </div>
       <div>
@@ -34,7 +53,7 @@ const shown = defineModel({ type: Boolean, required: true })
           <span flex-grow op70 color-white font-mono>
             {{ examplePath }}
           </span>
-          <button hover:color-white hover:bg-op10 hover:bg-gray px-1.5 py-.5 border="1 base rounded" @click="chooseExampleFile">
+          <button text-xs hover:color-white hover:bg-op10 hover:bg-gray px-1.5 py-.5 border="1 base rounded" @click="chooseExampleFile">
             Choose
           </button>
         </div>
