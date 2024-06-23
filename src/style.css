@@ -16,7 +16,6 @@ body {
   --uno: bg-base;
 }
 
-
 /* Overrides Floating Vue */
 .v-popper--theme-dropdown .v-popper__inner,
 .v-popper--theme-tooltip .v-popper__inner {
@@ -27,7 +26,7 @@ body {
 .v-popper--theme-tooltip .v-popper__arrow-inner,
 .v-popper--theme-dropdown .v-popper__arrow-inner {
   visibility: visible;
-  --at-apply: 'border-white dark:border-neutral-900';
+  --at-apply: 'border-white dark:border-base';
 }
 
 .v-popper--theme-tooltip .v-popper__arrow-outer,

@@ -1,6 +1,6 @@
 import { Buffer } from 'node:buffer'
-import { effectScope, extensionContext, ref, shallowRef, useDisposable, useDocumentText, useIsDarkTheme, watchEffect } from 'reactive-vscode'
-import type { TextEditor, WebviewPanel } from 'vscode'
+import { effectScope, extensionContext, shallowRef, useDisposable, useDocumentText, useIsDarkTheme, watchEffect } from 'reactive-vscode'
+import type { TextDocument, TextEditor, WebviewPanel } from 'vscode'
 import { Uri, ViewColumn, window, workspace } from 'vscode'
 import { loadIndexHtml, logger } from './utils'
 import { getTokenizer } from './getTokenizer'
@@ -38,28 +38,20 @@ export function usePreviewer(editor: TextEditor) {
   async function onReady() {
     logger.info('Webview ready')
 
-    const exampleUri = await getExampleFile(editor.document.uri)
-    const exampleDoc = exampleUri && await workspace.openTextDocument(exampleUri || editor.document.uri)
-    const exampleCode = exampleDoc
-      ? ref(exampleDoc.getText())
-      : ref('')
-    if (exampleDoc) {
-      useDisposable(workspace.onDidChangeTextDocument((e) => {
-        if (e.document === exampleDoc)
-          exampleCode.value = e.document.getText()
-      }))
-    }
-
+    const exampleUri = shallowRef(await getExampleFile(editor.document.uri))
+    const exampleDoc = shallowRef<TextDocument>()
+    watchEffect(() => {
+      const uri = exampleUri.value
+      if (uri)
+        workspace.openTextDocument(uri).then(d => exampleDoc.value = d)
+    })
+    const exampleCode = useDocumentText(exampleDoc)
     const isDark = useIsDarkTheme()
+
     watchEffect(() => {
       panel.webview.postMessage({
-        type: 'update-theme',
+        type: 'ext:update-theme',
         isDark: isDark.value,
-      })
-
-      panel.webview.postMessage({
-        type: 'update-example',
-        example: exampleCode,
       })
     })
 
@@ -83,32 +75,55 @@ export function usePreviewer(editor: TextEditor) {
     })
 
     watchEffect(() => {
-      tokenizer.value && panel.webview.postMessage({
-        type: 'update-tokens',
-        tokens: tokenizer.value(exampleCode.value),
-        code: exampleCode.value,
-        grammarPath: workspace.asRelativePath(editor.document.uri),
-        examplePath: exampleUri ? workspace.asRelativePath(exampleUri) : null,
-      })
+      if (tokenizer.value && exampleCode.value && exampleUri.value) {
+        panel.webview.postMessage({
+          type: 'ext:update-tokens',
+          tokens: tokenizer.value(exampleCode.value),
+          code: exampleCode.value,
+          grammarPath: workspace.asRelativePath(editor.document.uri),
+          examplePath: workspace.asRelativePath(exampleUri.value),
+        })
+      }
     })
 
+    let writeExampleTimer: NodeJS.Timeout | null = null
     panel.webview.onDidReceiveMessage((message) => {
-      if (message.type === 'ui-update-example') {
+      if (message.type === 'ui:update-example') {
         exampleCode.value = message.code
-        if (exampleUri)
-          workspace.fs.writeFile(exampleUri, Buffer.from(message.code))
+        const uri = exampleUri.value
+        if (uri) {
+          if (writeExampleTimer)
+            clearTimeout(writeExampleTimer)
+          writeExampleTimer = setTimeout(async () => {
+            await workspace.fs.writeFile(uri, Buffer.from(message.code))
+          }, 500)
+        }
       }
-      else if (message.type === 'ui-open-grammar-file') {
+      else if (message.type === 'ui:open-grammar-file') {
         window.showTextDocument(editor.document)
       }
-      else if (message.type === 'ui-open-example-file') {
-        window.showTextDocument(exampleDoc!)
+      else if (message.type === 'ui:open-example-file') {
+        if (exampleDoc.value)
+          window.showTextDocument(exampleDoc.value)
+      }
+      else if (message.type === 'ui:choose-example-file') {
+        window.showOpenDialog({
+          canSelectFiles: true,
+          canSelectFolders: false,
+          canSelectMany: false,
+          defaultUri: exampleUri.value,
+        }).then((uris) => {
+          const uri = uris?.[0]
+          if (uri) {
+            exampleUri.value = uri
+          }
+        })
       }
     })
   }
 
   panel.webview.onDidReceiveMessage((message) => {
-    if (message.type === 'ui-ready')
+    if (message.type === 'ui:ready')
       scope.run(onReady)
   })
 

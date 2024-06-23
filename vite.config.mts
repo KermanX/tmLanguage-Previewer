@@ -20,7 +20,17 @@ export default defineConfig({
           'shiki',
           '@shikijs/core',
           '@tomjs/vite-plugin-vscode',
+          '@reactive-vscode/vueuse',
+          '@reactive-vscode/reactivity',
+          '@vue/reactivity',
+          '@vue/shared',
         ],
+        define: {
+          __DEV__: 'true',
+        },
+      },
+      webview: {
+        csp: `<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src {{cspSource}} 'unsafe-inline'; script-src 'nonce-{{nonce}}' 'unsafe-eval'; img-src 'self' data:;">`,
       },
     }),
   ],

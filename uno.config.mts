@@ -8,7 +8,12 @@ export default defineConfig({
     'text-primary': 'text-orange:500',
   },
   presets: [
-    presetUno(),
+    presetUno({
+      dark: {
+        dark: '.vscode-dark',
+        light: '.vscode-light',
+      },
+    }),
     presetIcons(),
     presetAttributify(),
   ],

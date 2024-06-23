@@ -14,6 +14,9 @@ importers:
       '@iconify-json/carbon':
         specifier: ^1.1.36
         version: 1.1.36
+      '@reactive-vscode/vueuse':
+        specifier: 0.2.0-beta.1
+        version: 0.2.0-beta.1(@reactive-vscode/reactivity@0.2.0-beta.1)
       '@tomjs/vite-plugin-vscode':
         specifier: ^2.4.0
         version: 2.4.0(postcss@8.4.38)(typescript@5.5.2)(vite@5.3.1(@types/node@18.19.38))
@@ -670,6 +673,14 @@ packages:
 
   '@polka/url@1.0.0-next.25':
     resolution: {integrity: sha512-j7P6Rgr3mmtdkeDGTe0E/aYyWEWVtc5yFXtHCRHs28/jptDEWfaVOc5T7cblqy1XKPPfCxJc/8DwQ5YgLOZOVQ==}
+
+  '@reactive-vscode/reactivity@0.2.0-beta.1':
+    resolution: {integrity: sha512-DwB2ae/jAcNBo/5yrs0kQ74IXStvN36f5e2Ic3FsE4nr08Tsf648j6b5cDypINyUlv70kU8BH3vAVniSkZ1EpQ==}
+
+  '@reactive-vscode/vueuse@0.2.0-beta.1':
+    resolution: {integrity: sha512-st1iuaRNz6J9Xd2I1dWO3FE+lRKhPe0aSEgkoWJjZ2EtFKX50iIRoZd2uoBJa4zqR0QwqRU0drzZR5QEemxVxg==}
+    peerDependencies:
+      '@reactive-vscode/reactivity': 0.2.0-beta.1
 
   '@rollup/pluginutils@5.1.0':
     resolution: {integrity: sha512-XTIWOPPcpvyKI6L1NHo0lFlCyznUEyPmPY1mc3KpPVDYulHSTvyeLNVW00QTLIAFNhR3kYnJTQHeGqU4M3n09g==}
@@ -3182,6 +3193,12 @@ snapshots:
     optional: true
 
   '@polka/url@1.0.0-next.25': {}
+
+  '@reactive-vscode/reactivity@0.2.0-beta.1': {}
+
+  '@reactive-vscode/vueuse@0.2.0-beta.1(@reactive-vscode/reactivity@0.2.0-beta.1)':
+    dependencies:
+      '@reactive-vscode/reactivity': 0.2.0-beta.1
 
   '@rollup/pluginutils@5.1.0(rollup@4.18.0)':
     dependencies:

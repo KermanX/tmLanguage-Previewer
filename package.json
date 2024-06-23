@@ -20,7 +20,8 @@
     "vscode": "^1.89.0"
   },
   "activationEvents": [
-    "onStartupFinished"
+    "onCommand:*",
+    "onLanguage:json"
   ],
   "contributes": {
     "commands": [
@@ -53,6 +54,7 @@
   "devDependencies": {
     "@antfu/eslint-config": "^2.21.1",
     "@iconify-json/carbon": "^1.1.36",
+    "@reactive-vscode/vueuse": "0.2.0-beta.1",
     "@tomjs/vite-plugin-vscode": "^2.4.0",
     "@types/node": "18.x",
     "@types/vscode": "^1.89.0",
