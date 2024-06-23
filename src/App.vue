@@ -4,7 +4,7 @@ import { ref, watch } from 'vue'
 import type { TokensData } from '../types'
 import RenderToken from './components/RenderToken.vue'
 import Settings from './components/Settings.vue'
-import { examplePath, grammarPath, openExampleFile, openGrammarFile, vscode } from './states'
+import { examplePath, grammarFiles, openExampleFile, openGrammarFile, vscode } from './states'
 
 const tokens = ref<TokensData | null>(null)
 const exampleCode = ref('import { a } from "A"')
@@ -37,7 +37,7 @@ window.addEventListener('message', (event) => {
     tokens.value = event.data.tokens
     if (!editing.value)
       exampleCode.value = event.data.code
-    grammarPath.value = event.data.grammarPath
+    grammarFiles.value = event.data.grammarFiles
     examplePath.value = event.data.examplePath
   }
 })
@@ -83,12 +83,15 @@ watch(editing, hideAllPoppers)
       </template>
     </div>
     <div px-3 py-1.5 b-t b-gray b-op-30 text-xs select-none flex items-center>
-      <div v-if="grammarPath" pr-2>
+      <div v-if="grammarFiles && Object.keys(grammarFiles)" pr-2>
         <span font-bold>
-          Grammar:
+          Grammar{{ Object.keys(grammarFiles).length > 1 ? 's' : '' }}:
         </span>
         <button op70 color-white hover:color-white hover:op90 hover:underline @click="openGrammarFile">
-          {{ grammarPath }}
+          {{ Object.entries(grammarFiles)[0][1] }}
+          <span v-if="Object.keys(grammarFiles).length > 1" op70>
+            +{{ Object.keys(grammarFiles).length - 1 }}
+          </span>
         </button>
       </div>
       <div v-if="examplePath">

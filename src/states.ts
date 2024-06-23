@@ -1,6 +1,6 @@
-import { ref } from 'vue'
+import { ref, shallowRef } from 'vue'
 
-export const grammarPath = ref<string | null>(null)
+export const grammarFiles = shallowRef<Record<string, string> | null>(null)
 export const examplePath = ref<string | null>(null)
 
 declare const acquireVsCodeApi: () => any

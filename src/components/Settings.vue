@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { chooseExampleFile, examplePath, grammarPath, openGrammarFile } from '../states'
+import { chooseExampleFile, examplePath, grammarFiles, openGrammarFile } from '../states'
 
 const shown = defineModel({ type: Boolean, required: true })
 </script>
@@ -11,24 +11,26 @@ const shown = defineModel({ type: Boolean, required: true })
         Settings
       </h2>
       <div mb-2>
-        <h3 text-sm>
+        <h3 text-sm mb-2>
           Grammar
         </h3>
-        <div flex flex-wrap gap-x-2 items-center>
-          <span flex-grow op70 color-white font-mono>
-            {{ grammarPath }}
-          </span>
-          <div flex gap-2 items-center>
-            <div flex-grow />
-            <button i-carbon-edit hover:color-white hover:op90 hover:underline @click="openGrammarFile" />
-          </div>
+        <div grid items-center class="grid-cols-[min-content_1fr]" gap-x-2 px-1>
+          <template v-for="path, scope in grammarFiles" :key="scope">
+            <span op70 color-white font-mono>
+              <code>{{ scope }}</code>
+            </span>
+            <div op70 color-white font-mono flex flex-row-reverse items-center gap-1>
+              <div i-carbon-edit hover:color-white hover:op90 hover:underline />
+              <span>{{ path }}</span>
+            </div>
+          </template>
         </div>
       </div>
       <div>
         <h3 text-sm>
           Example
         </h3>
-        <div flex gap-2 items-center>
+        <div flex gap-2 items-center px-1>
           <span flex-grow op70 color-white font-mono>
             {{ examplePath }}
           </span>

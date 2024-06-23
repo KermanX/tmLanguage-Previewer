@@ -55,7 +55,7 @@ export function usePreviewer(editor: TextEditor) {
       })
     })
 
-    const text = useDocumentText(editor.document)
+    const grammarText = useDocumentText(editor.document)
     const tokenizer = shallowRef<Awaited<ReturnType<typeof getTokenizer>> | null>(null)
     watchEffect((onCleanup) => {
       const timer = setTimeout(() => {
@@ -66,7 +66,7 @@ export function usePreviewer(editor: TextEditor) {
         cancelled = true
         clearTimeout(timer)
       })
-      getTokenizer(text.value!, isDark.value).then((t) => {
+      getTokenizer(grammarText.value!, isDark.value).then((t) => {
         if (cancelled)
           return
         clearTimeout(timer)
@@ -78,9 +78,11 @@ export function usePreviewer(editor: TextEditor) {
       if (tokenizer.value && exampleCode.value && exampleUri.value) {
         panel.webview.postMessage({
           type: 'ext:update-tokens',
-          tokens: tokenizer.value(exampleCode.value),
+          tokens: tokenizer.value[1](exampleCode.value),
           code: exampleCode.value,
-          grammarPath: workspace.asRelativePath(editor.document.uri),
+          grammarFiles: {
+            [tokenizer.value[0]]: workspace.asRelativePath(editor.document.uri),
+          },
           examplePath: workspace.asRelativePath(exampleUri.value),
         })
       }
