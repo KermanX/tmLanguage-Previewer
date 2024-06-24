@@ -59,7 +59,6 @@ export function usePreviewer(editor: TextEditor) {
     const exampleDoc = shallowRef<TextDocument>()
     watchEffect(() => {
       const uri = exampleUri.value
-      console.log('example', uri)
       if (uri)
         workspace.openTextDocument(uri).then(d => exampleDoc.value = d)
     })

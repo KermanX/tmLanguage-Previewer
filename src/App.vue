@@ -93,7 +93,7 @@ watch(editing, hideAllPoppers)
         <div v-if="editing" absolute inset-0 pointer-events-none style="box-shadow: inset 0 0 4px #FFFFFFBB" />
       </template>
     </div>
-    <div px-3 py-1.5 b-t b-gray b-op-30 text-xs select-none flex items-center>
+    <div px-3 py-1.5 b-t b-gray b-op-30 text-xs select-none flex flex-wrap items-center>
       <div pr-2>
         <span font-bold>
           Grammar{{ enabledGrammars.length > 1 ? 's' : '' }}:
@@ -118,8 +118,10 @@ watch(editing, hideAllPoppers)
           {{ examplePath }}
         </button>
       </div>
-      <div flex-grow />
-      <button i-carbon-settings text-lg op80 hover:op90 mr-1 hover:color-white @click="openSettings" />
+      <div flex-grow flex>
+        <div flex-grow />
+        <button i-carbon-settings self-end justify-end text-lg op80 hover:op90 hover:color-white @click="openSettings" />
+      </div>
     </div>
   </div>
   <Settings v-model="settingsShown" />
