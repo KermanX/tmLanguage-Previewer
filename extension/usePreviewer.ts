@@ -6,14 +6,25 @@ import { Uri, ViewColumn, window, workspace } from 'vscode'
 import type { GrammarFile, TokensData } from '../types'
 import { loadIndexHtml, logger } from './utils'
 import { getTokenizer } from './getTokenizer'
-import { getExampleFile } from './getExampleFile'
-import { previewColumn } from './configs'
+import { findExampleFile } from './getExampleFile'
+import { grammarExts, previewColumn } from './configs'
+import { parsers } from './parsers'
 
-const editorToPanel = new WeakMap<TextEditor, WebviewPanel>()
+const grammarUriToPanel = new WeakMap<Uri, WebviewPanel>()
 
 export function usePreviewer(editor: TextEditor) {
-  if (editorToPanel.has(editor)) {
-    editorToPanel.get(editor)!.reveal(ViewColumn.Beside)
+  const grammarUri = editor.document.uri
+  if (grammarUriToPanel.has(grammarUri)) {
+    grammarUriToPanel.get(grammarUri)!.reveal()
+    return
+  }
+
+  const grammarExt = Object.keys(grammarExts.value)
+    .find(ext => grammarUri.fsPath.toLowerCase().endsWith(ext.toLowerCase())) ?? ''
+  const parser = parsers[grammarExts.value[grammarExt] as keyof typeof parsers]
+
+  if (!grammarExt || !parser) {
+    window.showErrorMessage(`Unsupported file type for ${grammarUri.fsPath}. Supported file types: ${Object.keys(grammarExts.value).join(', ')}`)
     return
   }
 
@@ -30,7 +41,7 @@ export function usePreviewer(editor: TextEditor) {
       retainContextWhenHidden: true,
     },
   ))
-  editorToPanel.set(editor, panel)
+  grammarUriToPanel.set(grammarUri, panel)
 
   panel.iconPath = Uri.joinPath(extensionContext.value!.extensionUri, 'icon.png')
 
@@ -42,12 +53,13 @@ export function usePreviewer(editor: TextEditor) {
   }
 
   async function onReady() {
-    logger.info('Webview ready')
-
-    const exampleUri = shallowRef(await getExampleFile(editor.document.uri))
+    logger.info(`Webview for ${grammarUri.toString()} ready.`)
+    const exampleUris = shallowRef(await findExampleFile(grammarUri, grammarExt))
+    const exampleUri = shallowRef<Uri | undefined>(exampleUris.value[0])
     const exampleDoc = shallowRef<TextDocument>()
     watchEffect(() => {
       const uri = exampleUri.value
+      console.log('example', uri)
       if (uri)
         workspace.openTextDocument(uri).then(d => exampleDoc.value = d)
     })
@@ -56,15 +68,15 @@ export function usePreviewer(editor: TextEditor) {
     const isDark = useIsDarkTheme()
 
     const grammarFiles: Record<string, GrammarFile> = reactive({
-      [editor.document.uri.toString()]: {
+      [grammarUri.toString()]: {
         name: null,
         scope: null,
-        path: workspace.asRelativePath(editor.document.uri),
+        path: workspace.asRelativePath(grammarUri),
         enabled: true,
       },
     })
     const grammarDocs: Record<string, TextDocument> = shallowReactive({
-      [editor.document.uri.toString()]: editor.document,
+      [grammarUri.toString()]: editor.document,
     })
     const forceUpdateGrammars = ref(0)
 
@@ -79,39 +91,38 @@ export function usePreviewer(editor: TextEditor) {
     watchEffect((onCleanup) => {
       // eslint-disable-next-line no-unused-expressions
       forceUpdateGrammars.value
-      const timer = setTimeout(() => {
-        tokenizer.value = null
-      }, 1000)
       let cancelled = false
       onCleanup(() => {
         cancelled = true
-        clearTimeout(timer)
-      })
-      try {
-        const grammars: any[] = []
-        for (const uri in grammarFiles) {
-          const doc = grammarDocs[uri]
-          if (!doc)
-            continue
-          const g = JSON.parse(doc.getText())
-          if (g.name)
-            grammarFiles[uri].name = g.name
-          if (g.scopeName)
-            grammarFiles[uri].scope = g.scopeName
-          if (grammarFiles[uri].enabled)
-            grammars.push(g)
-        }
-        getTokenizer(grammars, isDark.value).then((t) => {
+      });
+      (async () => {
+        try {
+          const grammars: any[] = []
+          for (const uri in grammarFiles) {
+            const doc = grammarDocs[uri]
+            if (!doc)
+              continue
+            const g = await parser(doc.getText())
+            if (cancelled)
+              return
+            if (g.name)
+              grammarFiles[uri].name = g.name
+            if (g.scopeName)
+              grammarFiles[uri].scope = g.scopeName
+            if (grammarFiles[uri].enabled)
+              grammars.push(g)
+          }
+          const t = await getTokenizer(grammars, isDark.value)
           if (cancelled)
             return
-          clearTimeout(timer)
           tokenizer.value = t
-        })
-      }
-      catch (e) {
-        clearTimeout(timer)
-        tokenizer.value = () => String(e)
-      }
+        }
+        catch (e) {
+          if (cancelled)
+            return
+          tokenizer.value = () => String(e)
+        }
+      })()
     })
 
     useDisposable(workspace.onDidOpenTextDocument((doc) => {
@@ -211,7 +222,7 @@ export function usePreviewer(editor: TextEditor) {
   })
 
   panel.onDidDispose(() => {
-    editorToPanel.delete(editor)
+    grammarUriToPanel.delete(grammarUri)
     scope?.stop()
   })
 }

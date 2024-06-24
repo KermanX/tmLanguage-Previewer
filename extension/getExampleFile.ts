@@ -1,20 +1,16 @@
 import { basename } from 'node:path'
 import { RelativePattern, Uri, workspace } from 'vscode'
+import { exampleSuffixes } from './configs'
 
-export async function getExampleFile(grammarUri: Uri): Promise<Uri | undefined> {
+export async function findExampleFile(grammarUri: Uri, grammarExt: string): Promise<Uri[]> {
   const grammarDirectory = Uri.joinPath(grammarUri, '..')
-  const grammarBasename = basename(grammarUri.fsPath)
-  const exmapleFilenames = [
-    grammarBasename.replace(/(\.tmLanguage)?\.json$/i, '.example'),
-    grammarBasename.replace(/(\.tmLanguage)?\.json$/i, '.example.*'),
-    grammarBasename.replace(/(\.tmLanguage)?\.json$/i, '.*'),
-  ]
-  for (const filename of exmapleFilenames) {
-    const exampleUri = (await workspace.findFiles(
-      new RelativePattern(grammarDirectory, filename),
+  const grammarBasename = basename(grammarUri.fsPath, grammarExt)
+  const exampleUris: Uri[] = []
+  for (const suffix of exampleSuffixes.value) {
+    exampleUris.push(...await workspace.findFiles(
+      new RelativePattern(grammarDirectory, grammarBasename + suffix),
       new RelativePattern(grammarDirectory, grammarBasename),
-    ))[0]
-    if (exampleUri)
-      return exampleUri
+    ))
   }
+  return exampleUris
 }

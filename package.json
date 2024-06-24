@@ -39,6 +39,29 @@
           "default": false,
           "description": "Should the previewer automatically open when a tmLanguage file is opened?"
         },
+        "tmlanguage-previewer.grammarExts": {
+          "type": "object",
+          "properties": {},
+          "additionalProperties": {
+            "type": "string"
+          },
+          "default": {
+            ".tmLanguage.json": "json"
+          },
+          "description": "File extensions to parser mapping."
+        },
+        "tmlanguage-previewer.exampleSuffixes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [
+            ".example.*",
+            "-example.*",
+            ".*"
+          ],
+          "description": "The possible suffixes for example files."
+        },
         "tmlanguage-previewer.previewColumn": {
           "type": "string",
           "enum": [
@@ -78,12 +101,14 @@
     "@iconify-json/carbon": "^1.1.36",
     "@reactive-vscode/vueuse": "0.2.0-beta.1",
     "@tomjs/vite-plugin-vscode": "^2.4.0",
+    "@types/js-yaml": "^4.0.9",
     "@types/node": "18.x",
     "@types/vscode": "^1.89.0",
     "@unocss/reset": "^0.61.0",
     "@vitejs/plugin-vue": "^5.0.5",
     "eslint": "^9.5.0",
     "floating-vue": "^5.2.2",
+    "js-yaml": "^4.1.0",
     "lint-staged": "^15.2.7",
     "reactive-vscode": "^0.2.0-beta.1",
     "shiki": "^1.9.0",
