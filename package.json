@@ -31,7 +31,24 @@
         "icon": "./icon.png"
       }
     ],
-    "configuration": {},
+    "configuration": {
+      "title": "tmLanguage Previewer",
+      "properties": {
+        "tmlanguage-previewer.previewColumn": {
+          "type": "string",
+          "enum": [
+            "active",
+            "beside",
+            "end",
+            "one",
+            "two",
+            "three"
+          ],
+          "default": "beside",
+          "description": "Controls where the preview will be shown when opening a tmLanguage file."
+        }
+      }
+    },
     "menus": {
       "editor/title": [
         {

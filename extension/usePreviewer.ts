@@ -7,6 +7,7 @@ import type { GrammarFile, TokensData } from '../types'
 import { loadIndexHtml, logger } from './utils'
 import { getTokenizer } from './getTokenizer'
 import { getExampleFile } from './getExampleFile'
+import { previewColumn } from './configs'
 
 const editorToPanel = new WeakMap<TextEditor, WebviewPanel>()
 
@@ -20,7 +21,7 @@ export function usePreviewer(editor: TextEditor) {
     'tmlanguage-previewer',
     'TmLanguage Previewer',
     {
-      viewColumn: ViewColumn.Beside,
+      viewColumn: previewColumn.value,
       preserveFocus: true,
     },
     {
