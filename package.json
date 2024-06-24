@@ -34,6 +34,11 @@
     "configuration": {
       "title": "tmLanguage Previewer",
       "properties": {
+        "tmlanguage-previewer.autoStart": {
+          "type": "boolean",
+          "default": false,
+          "description": "Should the previewer automatically open when a tmLanguage file is opened?"
+        },
         "tmlanguage-previewer.previewColumn": {
           "type": "string",
           "enum": [

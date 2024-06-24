@@ -2,9 +2,14 @@ import type { ConfigType } from 'reactive-vscode'
 import { computed, defineConfigs } from 'reactive-vscode'
 import { ViewColumn } from 'vscode'
 
-const { previewColumn: previewColumnRaw } = defineConfigs('tmlanguage-previewer', {
+const { autoStart, previewColumn: previewColumnRaw } = defineConfigs('tmlanguage-previewer', {
+  autoStart: Boolean,
   previewColumn: Object as ConfigType<'active' | 'beside' | 'one' | 'two' | 'three'>,
 })
+
+export {
+  autoStart,
+}
 
 export const previewColumn = computed(() => {
   switch (previewColumnRaw.value) {

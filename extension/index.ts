@@ -1,6 +1,6 @@
 import { defineExtension, useCommand } from 'reactive-vscode'
 import { window } from 'vscode'
-import { } from './configs'
+import { useAutoStart } from './useAutoStart'
 import { usePreviewer } from './usePreviewer'
 import { logger } from './utils'
 
@@ -17,4 +17,6 @@ export = defineExtension(() => {
     logger.info('Opening Previewer')
     usePreviewer(editor)
   })
+
+  useAutoStart()
 })
