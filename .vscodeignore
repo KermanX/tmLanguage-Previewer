@@ -11,3 +11,4 @@ types.ts
 *.map
 .eslintcache
 *.vsix
+node_modules
