@@ -10,3 +10,4 @@ pnpm-workspace.yaml
 types.ts
 *.map
 .eslintcache
+*.vsix
