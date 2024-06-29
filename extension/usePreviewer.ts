@@ -14,18 +14,18 @@ const grammarUriToPanel = new WeakMap<Uri, WebviewPanel>()
 
 export function usePreviewer(editor: TextEditor) {
   const isDark = useIsDarkTheme()
-  const grammarUri = editor.document.uri
-  if (grammarUriToPanel.has(grammarUri)) {
-    grammarUriToPanel.get(grammarUri)!.reveal()
+  const entryUri = editor.document.uri
+  if (grammarUriToPanel.has(entryUri)) {
+    grammarUriToPanel.get(entryUri)!.reveal()
     return
   }
 
   const grammarExt = Object.keys(grammarExts.value)
-    .find(ext => grammarUri.fsPath.toLowerCase().endsWith(ext.toLowerCase())) ?? ''
+    .find(ext => entryUri.fsPath.toLowerCase().endsWith(ext.toLowerCase())) ?? ''
   const parser = parsers[grammarExts.value[grammarExt] as keyof typeof parsers]
 
   if (!grammarExt || !parser) {
-    window.showErrorMessage(`Unsupported file type for ${grammarUri.fsPath}. Supported file types: ${Object.keys(grammarExts.value).join(', ')}`)
+    window.showErrorMessage(`Unsupported file type for ${entryUri.fsPath}. Supported file types: ${Object.keys(grammarExts.value).join(', ')}`)
     return
   }
 
@@ -42,7 +42,7 @@ export function usePreviewer(editor: TextEditor) {
       retainContextWhenHidden: true,
     },
   ))
-  grammarUriToPanel.set(grammarUri, panel)
+  grammarUriToPanel.set(entryUri, panel)
 
   panel.iconPath = Uri.joinPath(extensionContext.value!.extensionUri, 'icon.png')
 
@@ -54,8 +54,8 @@ export function usePreviewer(editor: TextEditor) {
   }
 
   async function onReady() {
-    logger.info(`Webview for ${grammarUri.toString()} ready.`)
-    const exampleUris = shallowRef(await findExampleFile(grammarUri, grammarExt))
+    logger.info(`Webview for ${entryUri.toString()} ready.`)
+    const exampleUris = shallowRef(await findExampleFile(entryUri, grammarExt))
     const exampleUri = shallowRef<Uri | undefined>(exampleUris.value[0])
     const exampleDoc = shallowRef<TextDocument>()
     watchEffect(() => {
@@ -67,19 +67,19 @@ export function usePreviewer(editor: TextEditor) {
     const exampleLang = ref<string | null>(null)
 
     const grammarFiles: Record<string, GrammarFile> = reactive({
-      [grammarUri.toString()]: {
+      [entryUri.toString()]: {
         name: null,
         scope: null,
-        path: workspace.asRelativePath(grammarUri),
+        path: workspace.asRelativePath(entryUri),
         enabled: true,
       },
     })
     const grammarDocs: Record<string, TextDocument> = shallowReactive({
-      [grammarUri.toString()]: editor.document,
+      [entryUri.toString()]: editor.document,
     })
     const forceUpdateGrammars = ref(0)
 
-    const tokenizer = shallowRef<((code: string, lang: string) => TokensData) | null>(null)
+    const tokenizer = shallowRef<Awaited<ReturnType<typeof getTokenizer>> | null>(null)
     watchEffect((onCleanup) => {
       // eslint-disable-next-line no-unused-expressions
       forceUpdateGrammars.value
@@ -109,18 +109,19 @@ export function usePreviewer(editor: TextEditor) {
           const t = await getTokenizer(grammars, dark)
           if (cancelled)
             return
+          tokenizer.value?.[1]?.dispose()
           tokenizer.value = t
         }
         catch (e) {
           if (cancelled)
             return
-          tokenizer.value = () => String(e)
+          tokenizer.value = [() => String(e), null]
         }
       })()
     })
 
-    useDisposable(workspace.onDidOpenTextDocument((doc) => {
-      if (grammarFiles[doc.uri.toString()])
+    useDisposable(workspace.onDidChangeTextDocument(({ document }) => {
+      if (grammarFiles[document.uri.toString()])
         forceUpdateGrammars.value++
     }))
 
@@ -128,7 +129,7 @@ export function usePreviewer(editor: TextEditor) {
       if (tokenizer.value && exampleCode.value && exampleUri.value) {
         postMessage({
           type: 'ext:update-tokens',
-          tokens: tokenizer.value(exampleCode.value, exampleLang.value || grammarFiles[editor.document.uri.toString()].name || 'plaintext'),
+          tokens: tokenizer.value[0](exampleCode.value, exampleLang.value || grammarFiles[editor.document.uri.toString()].name || 'plaintext'),
           code: exampleCode.value,
           grammarFiles: { ...grammarFiles },
           examplePath: workspace.asRelativePath(exampleUri.value),
@@ -216,7 +217,7 @@ export function usePreviewer(editor: TextEditor) {
   })
 
   panel.onDidDispose(() => {
-    grammarUriToPanel.delete(grammarUri)
+    grammarUriToPanel.delete(entryUri)
     scope?.stop()
   })
 }

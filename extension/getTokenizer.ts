@@ -11,7 +11,7 @@ export async function getTokenizer(grammars: any[], dark: boolean) {
         .concat(grammars),
     })
 
-    return (code: string, lang: string) => {
+    return [(code: string, lang: string) => {
       try {
         return highlighter.codeToTokensBase(code, {
           lang: lang.toLowerCase() as any,
@@ -22,9 +22,9 @@ export async function getTokenizer(grammars: any[], dark: boolean) {
       catch (e) {
         return String(e)
       }
-    }
+    }, highlighter] as const
   }
   catch (e) {
-    return () => String(e)
+    return [() => String(e), null] as const
   }
 }
