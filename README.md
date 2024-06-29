@@ -5,6 +5,8 @@
 
 A VS Code extension for previewing tmLanguage grammar files. Created with [Reactive VS Code](https://kermanx.github.io/reactive-vscode).
 
+There is also a online version: [tmLanguage Playground](https://kermanx.github.io/tmLanguage-Playground/).
+
 ## Usage
 
 1. Open a `.tmLanguage.json` file in VSCode. For example, `xyz.tmLanguage.json`.
