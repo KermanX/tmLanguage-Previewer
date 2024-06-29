@@ -13,6 +13,7 @@ import { parsers } from './parsers'
 const grammarUriToPanel = new WeakMap<Uri, WebviewPanel>()
 
 export function usePreviewer(editor: TextEditor) {
+  const isDark = useIsDarkTheme()
   const grammarUri = editor.document.uri
   if (grammarUriToPanel.has(grammarUri)) {
     grammarUriToPanel.get(grammarUri)!.reveal()
@@ -64,7 +65,6 @@ export function usePreviewer(editor: TextEditor) {
     })
     const exampleCode = useDocumentText(exampleDoc)
     const exampleLang = ref<string | null>(null)
-    const isDark = useIsDarkTheme()
 
     const grammarFiles: Record<string, GrammarFile> = reactive({
       [grammarUri.toString()]: {
@@ -79,13 +79,6 @@ export function usePreviewer(editor: TextEditor) {
     })
     const forceUpdateGrammars = ref(0)
 
-    watchEffect(() => {
-      postMessage({
-        type: 'ext:update-theme',
-        isDark: isDark.value,
-      })
-    })
-
     const tokenizer = shallowRef<((code: string, lang: string) => TokensData) | null>(null)
     watchEffect((onCleanup) => {
       // eslint-disable-next-line no-unused-expressions
@@ -93,12 +86,14 @@ export function usePreviewer(editor: TextEditor) {
       let cancelled = false
       onCleanup(() => {
         cancelled = true
-      });
+      })
+      const docs = { ...grammarDocs }
+      const dark = isDark.value;
       (async () => {
         try {
           const grammars: any[] = []
-          for (const uri in grammarFiles) {
-            const doc = grammarDocs[uri]
+          for (const uri in docs) {
+            const doc = docs[uri]
             if (!doc)
               continue
             const g = await parser(doc.getText())
@@ -111,7 +106,7 @@ export function usePreviewer(editor: TextEditor) {
             if (grammarFiles[uri].enabled)
               grammars.push(g)
           }
-          const t = await getTokenizer(grammars, isDark.value)
+          const t = await getTokenizer(grammars, dark)
           if (cancelled)
             return
           tokenizer.value = t

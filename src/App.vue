@@ -85,10 +85,10 @@ watch(editing, hideAllPoppers)
           v-if="editing" absolute right-4 top-2 p-2 text-xl class="hover:bg-gray/15" rounded-lg
           @click="finishEdit"
         >
-          <div text-transparent group-hover:text-white op80 i-carbon-checkmark />
+          <div op0 group-hover:op80 i-carbon-checkmark class="hide-when-popoever" />
         </button>
         <button v-else absolute right-4 top-2 p-2 text-xl class="hover:bg-gray/15" rounded-lg @click="startEdit">
-          <div text-transparent group-hover:text-white op80 i-carbon-edit />
+          <div op0 group-hover:op80 i-carbon-edit class="hide-when-popoever" />
         </button>
         <div v-if="editing" absolute inset-0 pointer-events-none style="box-shadow: inset 0 0 4px #FFFFFFBB" />
       </template>
@@ -99,10 +99,10 @@ watch(editing, hideAllPoppers)
           Grammar{{ enabledGrammars.length > 1 ? 's' : '' }}:
         </span>
         <template v-if="enabledGrammars.length">
-          <button op70 color-white hover:color-white hover:op90 hover:underline @click="openGrammarFile">
+          <button op90 hover:op100 hover:underline @click="openGrammarFile">
             {{ enabledGrammars[0][1].path }}
           </button>
-          <span v-if="enabledGrammars.length > 1" op50 color-white hover:color-white hover:op70 @click="openSettings">
+          <span v-if="enabledGrammars.length > 1" op70 hover:op90 @click="openSettings">
             +{{ enabledGrammars.length - 1 }}
           </span>
         </template>
@@ -114,15 +114,21 @@ watch(editing, hideAllPoppers)
         <span font-bold>
           Example:
         </span>
-        <button op70 color-white hover:color-white hover:op90 hover:underline @click="openExampleFile">
+        <button op90 hover:op100 hover:underline @click="openExampleFile">
           {{ examplePath }}
         </button>
       </div>
       <div flex-grow flex>
         <div flex-grow />
-        <button i-carbon-settings self-end justify-end text-lg op80 hover:op90 hover:color-white @click="openSettings" />
+        <button i-carbon-settings self-end justify-end text-lg op80 hover:op90 @click="openSettings" />
       </div>
     </div>
   </div>
   <Settings v-model="settingsShown" />
 </template>
+
+<style>
+body.v-popper--some-open .hide-when-popoever {
+  opacity: 0 !important;
+}
+</style>
