@@ -14,6 +14,7 @@
     "Other"
   ],
   "main": "./dist/extension/index.js",
+  "icon": "./icon.png",
   "files": [
     "README.md",
     "dist",
