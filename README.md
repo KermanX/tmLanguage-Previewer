@@ -1,7 +1,6 @@
 # tmLanguage Previewer
 
-[![Reactive VSCode](https://img.shields.io/badge/Reactive-VSCode-%23007ACC?style=flat&labelColor=%23229863
-)](https://kermanx.github.io/reactive-vscode/)
+[![Reactive VSCode](https://img.shields.io/badge/Reactive-VSCode-%23007ACC?style=flat&labelColor=%23229863)](https://kermanx.github.io/reactive-vscode/)
 
 A VS Code extension for previewing tmLanguage grammar files. Created with [Reactive VS Code](https://kermanx.github.io/reactive-vscode).
 
